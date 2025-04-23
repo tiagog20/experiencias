@@ -1,10 +1,11 @@
-# ososososos
-import torch
 import torchvision
 from torch.utils.data import TensorDataset
 # Testing
 import argparse
 import wandb
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split
+import pandas as pd
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--IdExecution', type=str, help='ID of the execution')
@@ -14,13 +15,18 @@ if args.IdExecution:
     print(f"IdExecution: {args.IdExecution}")
 
 def load(train_size=.8):
+
+    
     """
     # Load the data
     """
       
     # the data, split between train and test sets
-    train = torchvision.datasets.MNIST(root='./data', train=True, download=True)
-    test = torchvision.datasets.MNIST(root='./data', train=False, download=True)
+    iris = load_iris(as_frame=True)  
+    
+    train = torchvision.iris.data(root='./data', train=True, download=True)
+    test = torchvision.iris.data(root='./data', train=False, download=True)
+    
 
     (x_train, y_train), (x_test, y_test) = (train.data, train.targets), (test.data, test.targets)
 
