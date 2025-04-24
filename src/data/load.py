@@ -1,69 +1,66 @@
-import torchvision
-from torch.utils.data import TensorDataset
-# Testing
-import argparse
 import wandb
 from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
 import pandas as pd
+import argparse
+import sys
+import os
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--IdExecution', type=str, help='ID of the execution')
-args = parser.parse_args()
+# --- Argumentos adaptables para Jupyter o script ---
+def parse_args():
+    if "ipykernel" in sys.argv[0]:  # Ejecutando en Jupyter
+        class Args:
+            IdExecution = "local-debug"
+        return Args()
+    else:
+        parser = argparse.ArgumentParser()
+        parser.add_argument('--IdExecution', type=str, help='ID de la ejecución')
+        return parser.parse_args()
 
-if args.IdExecution:
-    print(f"IdExecution: {args.IdExecution}")
+args = parse_args()
+# --- Configuración de WandB ---
+wandb.login(key="f505fc5086438e923a5d468c900a748275a8ff7c", relogin=True)
 
-def load(train_size=.8):
+# --- Cargar el dataset Iris y dividirlo ---
+def load_and_split(train_size=0.8):
+    iris = load_iris(as_frame=True)
+    df = iris.frame
+    df.columns = [*iris.feature_names, "target"]
 
-    
-    """
-    # Load the data
-    """
-      
-    # the data, split between train and test sets
-    iris = load_iris(as_frame=True)  
-    
-    train = torchvision.iris.data(root='./data', train=True, download=True)
-    test = torchvision.iris.data(root='./data', train=False, download=True)
-    
+    df_trainval, df_test = train_test_split(df, test_size=0.2, random_state=42, stratify=df["target"])
+    df_train, df_val = train_test_split(df_trainval, test_size=1 - train_size, random_state=42, stratify=df_trainval["target"])
+    return df_train, df_val, df_test
 
-    (x_train, y_train), (x_test, y_test) = (train.data, train.targets), (test.data, test.targets)
-
-    # split off a validation set for hyperparameter tuning
-    x_train, x_val = x_train[:int(len(train)*train_size)], x_train[int(len(train)*train_size):]
-    y_train, y_val = y_train[:int(len(train)*train_size)], y_train[int(len(train)*train_size):]
-
-    training_set = TensorDataset(x_train, y_train)
-    validation_set = TensorDataset(x_val, y_val)
-    test_set = TensorDataset(x_test, y_test)
-    datasets = [training_set, validation_set, test_set]
-    return datasets
-
-def load_and_log():
-    # 🚀 start a run, with a type to label it and a project it can call home
+# --- Guardar y registrar los archivos como Artifact CSV ---
+def log_to_wandb():
     with wandb.init(
-        project="MLOps-Pycon2023",
-        name=f"Load Raw Data ExecId-{args.IdExecution}", job_type="load-data") as run:
-        
-        datasets = load()  # separate code for loading the datasets
-        names = ["training", "validation", "test"]
+        project="EXPERIENCIAS",
+        name=f"Iris CSV ExecId-{args.IdExecution}",
+        job_type="load-data") as run:
 
-        # 🏺 create our Artifact
-        raw_data = wandb.Artifact(
-            "mnist-raw", type="dataset",
-            description="raw MNIST dataset, split into train/val/test",
-            metadata={"source": "torchvision.datasets.MNIST",
-                      "sizes": [len(dataset) for dataset in datasets]})
+        df_train, df_val, df_test = load_and_split()
 
-        for name, data in zip(names, datasets):
-            # 🐣 Store a new file in the artifact, and write something into its contents.
-            with raw_data.new_file(name + ".pt", mode="wb") as file:
-                x, y = data.tensors
-                torch.save((x, y), file)
+        os.makedirs("iris_data", exist_ok=True)
+        df_train.to_csv("iris_data/train.csv", index=False)
+        df_val.to_csv("iris_data/val.csv", index=False)
+        df_test.to_csv("iris_data/test.csv", index=False)
 
-        # ✍️ Save the artifact to W&B.
-        run.log_artifact(raw_data)
+        artifact = wandb.Artifact(
+            name="iris-tabular",
+            type="dataset",
+            description="Iris dataset in tabular format (CSV)",
+            metadata={"source": "sklearn.datasets.load_iris",
+                      "train_size": len(df_train),
+                      "val_size": len(df_val),
+                      "test_size": len(df_test)}
+        )
 
-# testing
-load_and_log()
+        artifact.add_file("iris_data/train.csv")
+        artifact.add_file("iris_data/val.csv")
+        artifact.add_file("iris_data/test.csv")
+
+        run.log_artifact(artifact)
+        print("✅ Dataset CSV cargado y registrado con éxito en wandb.")
+
+# --- Ejecutar ---
+log_to_wandb()
