@@ -3,12 +3,12 @@ name: Preprocess Raw Data like artifact to wandb
 on:
   workflow_run:
     workflows: ["Load Raw Data like artifact to wandb"]
-    branches: [main]
+    branches: [master]
     types: 
       - completed
   push:
     branches:
-      - main
+      - master
     paths:
       - 'src/data/preprocess.py'
 
