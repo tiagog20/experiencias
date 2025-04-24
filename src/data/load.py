@@ -66,4 +66,3 @@ def log_to_wandb():
 log_to_wandb()
 # --- Fin del script ---
 # --- Notas ---
-```
