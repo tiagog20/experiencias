@@ -2,4 +2,3 @@ numpy<2.0
 pandas
 scikit-learn
 wandb==0.15.4
-os
