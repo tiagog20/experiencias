@@ -69,3 +69,4 @@ def main():
 if __name__ == "__main__":
     main()
 # --- Fin del script ---
+# Este script carga el dataset Iris desde un artifact de wandb, lo estandariza usando StandardScaler,
