@@ -65,4 +65,3 @@ def log_to_wandb():
 # --- Ejecutar ---
 log_to_wandb()
 # --- Fin del script ---
-# --- Notas ---
