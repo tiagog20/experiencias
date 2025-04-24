@@ -3,7 +3,7 @@ name: Train Model like artifact to wandb
 on:
   push:
     branches:
-      - main
+      - master
     paths:
       - 'src/model/train.py'
 
